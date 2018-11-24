@@ -49,29 +49,56 @@ def getColumns(cols):
         return t
 
 if isinstance(parsed["from"], list):
-    if "as" in query:
-        fromArr = parsed["from"]
-        viewColumns = getColumns(parsed["select"])
+    fromArr = parsed["from"]
+    viewColumns = getColumns(parsed["select"])
+    if isinstance(fromArr[0], dict):
         table1 = fromArr[0]["value"]
         table1Alias = fromArr[0]["name"]
-        tableDict[table1Alias] = table1
-        function = list(fromArr[1].keys())[0]
-        # print(function)
-        table2 = fromArr[1][function]["value"]
-        table2Alias = fromArr[1][function]["name"]
-        tableDict[table2Alias] = table2
-       
     else:
-        fromArr = parsed["from"]
-        viewColumns = getColumns(parsed["select"])
         table1 = fromArr[0]
         table1Alias = table1
-        tableDict[table1Alias] = table1
+    
+    if isinstance(fromArr[1], dict):
         function = list(fromArr[1].keys())[0]
-        # print(function)
-        table2 = fromArr[1][function]
-        table2Alias = table2
-        tableDict[table2Alias] = table2
+        functionVal = fromArr[1][function]
+        if isinstance(functionVal, dict):
+            table2 = fromArr[1][function]["value"]
+            table2Alias = fromArr[1][function]["name"]
+        else:
+            table2 = fromArr[1][function]
+            table2Alias = table2
+    tableDict[table1Alias] = table1
+    tableDict[table2Alias] = table1
+        # tableDict[table1Alias] = table1
+        # function = list(fromArr[1].keys())[0]
+        # table2 = fromArr[1][function]["value"]
+        # table2Alias = fromArr[1][function]["name"]
+        # tableDict[table2Alias] = table2
+    
+    
+    # if "as" in query:
+    #     fromArr = parsed["from"]
+    #     viewColumns = getColumns(parsed["select"])
+    #     table1 = fromArr[0]["value"]
+    #     table1Alias = fromArr[0]["name"]
+    #     tableDict[table1Alias] = table1
+    #     function = list(fromArr[1].keys())[0]
+    #     # print(function)
+    #     table2 = fromArr[1][function]["value"]
+    #     table2Alias = fromArr[1][function]["name"]
+    #     tableDict[table2Alias] = table2
+       
+    # else:
+    #     fromArr = parsed["from"]
+    #     viewColumns = getColumns(parsed["select"])
+    #     table1 = fromArr[0]
+    #     table1Alias = table1
+    #     tableDict[table1Alias] = table1
+    #     function = list(fromArr[1].keys())[0]
+    #     # print(function)
+    #     table2 = fromArr[1][function]
+    #     table2Alias = table2
+    #     tableDict[table2Alias] = table2
     print(table1+" "+table1Alias+" "+function+" "+table2+" "+table2Alias)
     print("Columns: "+str(viewColumns))
     print(tableDict)
