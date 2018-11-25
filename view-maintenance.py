@@ -57,7 +57,7 @@ def getColumns(cols, colType):
 
 parsed = parse(query)
 
-print(parsed)
+# print(parsed)
 
 fromTable = parsed["from"]
 if isinstance(fromTable, dict):
@@ -67,14 +67,14 @@ tableColumns = getColumns(parsed["select"], "value")
 mapping = {}
 
 #Create view table
-cursor.execute(oldQuery)
+# cursor.execute(oldQuery)
 
-print(viewColumns)
-print(tableColumns)
+# print(viewColumns)
+# print(tableColumns)
 for i in range(len(viewColumns)):
     mapping[viewColumns[i]] = tableColumns[i]
 
-print(mapping)
+print("Mapping from MV -> Table: "+ json.dumps(mapping))
 
 #Set up triggers
 #Insert Trigger
@@ -89,9 +89,43 @@ for i in range(len(tableColumns)):
         insertTrigger = insertTrigger+","
     insertTrigger = insertTrigger+" NEW."+tableColumns[i]
 insertTrigger = insertTrigger + "); end;"
-print("TRIGGER: "+insertTrigger)
+print("INSERT TRIGGER: "+insertTrigger)
+
+cursor.execute(insertTrigger)
 
 #Delete trigger
+deleteTrigger = "create trigger trig_"+fromTable+"_del after delete on "+fromTable+" for each row begin delete from "+viewName+" where "+viewColumns[0]+" = OLD."+tableColumns[0]+"; end;"
+print("DELETE TRIGGER: "+deleteTrigger)
+
+cursor.execute(deleteTrigger)
+
+#Update trigger
+updateTrigger = "create trigger trig_"+fromTable+"_upd after update on "+fromTable+" for each row begin update "+viewName+" set "
+for i in range(len(viewColumns)):
+    if i != 0:
+        updateTrigger = updateTrigger+","
+    updateTrigger = updateTrigger+" "+viewColumns[i]+" = NEW."+tableColumns[i]
+updateTrigger = updateTrigger + "; end;"
+# for i in range(len(tableColumns)):
+#     if i != 0:
+#         updateTrigger = updateTrigger+","
+#     updateTrigger = updateTrigger+" NEW."+tableColumns[i]
+# updateTrigger = updateTrigger + "); end;"
+print("UPDATE TRIGGER: "+updateTrigger)
+
+cursor.execute(updateTrigger)
+
+# for i in range(len(viewColumns)):
+#     if i != 0:
+#         deleteTrigger = deleteTrigger+","
+#     deleteTrigger = deleteTrigger+" "+viewColumns[i]
+# deleteTrigger = deleteTrigger + ") values ("
+# for i in range(len(tableColumns)):
+#     if i != 0:
+#         deleteTrigger = deleteTrigger+","
+#     deleteTrigger = deleteTrigger+" NEW."+tableColumns[i]
+# deleteTrigger = deleteTrigger + "); end;"
+
 # table1 = ''
 # table1Alias = ''
 # table2 = ''
