@@ -102,23 +102,18 @@ def simpleQuery(parsed):
     deleteTrigger = "create trigger trig_"+fromTable+"_del after delete on "+fromTable+" for each row begin delete from "+viewName+" where "+viewColumns[0]+" = OLD."+tableColumns[0]+"; end;"
     print("DELETE TRIGGER: "+deleteTrigger)
 
-    # cursor.execute(deleteTrigger)
 
-#Update trigger
+    #Update trigger
     updateTrigger = "create trigger trig_"+fromTable+"_upd after update on "+fromTable+" for each row begin update "+viewName+" set "
     for i in range(len(viewColumns)):
         if i != 0:
             updateTrigger = updateTrigger+","
         updateTrigger = updateTrigger+" "+viewColumns[i]+" = NEW."+tableColumns[i]
     updateTrigger = updateTrigger + "; end;"
-# for i in range(len(tableColumns)):
-#     if i != 0:
-#         updateTrigger = updateTrigger+","
-#     updateTrigger = updateTrigger+" NEW."+tableColumns[i]
-# updateTrigger = updateTrigger + "); end;"
+
+    # cursor.execute(updateTrigger)
     print("UPDATE TRIGGER: "+updateTrigger)
 
-# cursor.execute(updateTrigger)
 
 
 def complexQuery(parsed):
@@ -162,93 +157,11 @@ def complexQuery(parsed):
 
     print("Delete triggers: "+deleteTriggerTable1);
     print("Delete triggers: "+deleteTriggerTable2);
+
+
 fromTable = parsed["from"]
 if isinstance(fromTable, list):
     #Complex query
     complexQuery(parsed)
 else:
     simpleQuery(parsed)
-
-# for i in range(len(viewColumns)):
-#     if i != 0:
-#         deleteTrigger = deleteTrigger+","
-#     deleteTrigger = deleteTrigger+" "+viewColumns[i]
-# deleteTrigger = deleteTrigger + ") values ("
-# for i in range(len(tableColumns)):
-#     if i != 0:
-#         deleteTrigger = deleteTrigger+","
-#     deleteTrigger = deleteTrigger+" NEW."+tableColumns[i]
-# deleteTrigger = deleteTrigger + "); end;"
-
-# table1 = ''
-# table1Alias = ''
-# table2 = ''
-# table2Alias = ''
-# tableDict = {}
-# viewColumns = []
-# print(query)
-# parsed = parse(query)
-# print(parsed)
-# mapping = {}
-# # print(len(parsed["from"]))
-# 
-
-# if isinstance(parsed["from"], list):
-#     fromArr = parsed["from"]
-#     viewColumns = getColumns(parsed["select"])
-#     if isinstance(fromArr[0], dict):
-#         table1 = fromArr[0]["value"]
-#         table1Alias = fromArr[0]["name"]
-#     else:
-#         table1 = fromArr[0]
-#         table1Alias = table1
-    
-#     if isinstance(fromArr[1], dict):
-#         function = list(fromArr[1].keys())[0]
-#         functionVal = fromArr[1][function]
-#         if isinstance(functionVal, dict):
-#             table2 = fromArr[1][function]["value"]
-#             table2Alias = fromArr[1][function]["name"]
-#         else:
-#             table2 = fromArr[1][function]
-#             table2Alias = table2
-
-#     tableDict[table1Alias] = table1
-#     tableDict[table2Alias] = table1
-#     for col in viewColumns:
-#         tAlias = col.split('.')[0]
-#         tColumn = col.split('.')[1]
-
-#         # tableDict[table1Alias] = table1
-#         # function = list(fromArr[1].keys())[0]
-#         # table2 = fromArr[1][function]["value"]
-#         # table2Alias = fromArr[1][function]["name"]
-#         # tableDict[table2Alias] = table2
-    
-    
-#     # if "as" in query:
-#     #     fromArr = parsed["from"]
-#     #     viewColumns = getColumns(parsed["select"])
-#     #     table1 = fromArr[0]["value"]
-#     #     table1Alias = fromArr[0]["name"]
-#     #     tableDict[table1Alias] = table1
-#     #     function = list(fromArr[1].keys())[0]
-#     #     # print(function)
-#     #     table2 = fromArr[1][function]["value"]
-#     #     table2Alias = fromArr[1][function]["name"]
-#     #     tableDict[table2Alias] = table2
-       
-#     # else:
-#     #     fromArr = parsed["from"]
-#     #     viewColumns = getColumns(parsed["select"])
-#     #     table1 = fromArr[0]
-#     #     table1Alias = table1
-#     #     tableDict[table1Alias] = table1
-#     #     function = list(fromArr[1].keys())[0]
-#     #     # print(function)
-#     #     table2 = fromArr[1][function]
-#     #     table2Alias = table2
-#     #     tableDict[table2Alias] = table2
-#     print(table1+" "+table1Alias+" "+function+" "+table2+" "+table2Alias)
-#     print("Columns: "+str(viewColumns))
-#     print(tableDict)
