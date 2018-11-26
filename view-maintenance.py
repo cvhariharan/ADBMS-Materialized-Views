@@ -41,6 +41,9 @@ query = ""
 for i in range(4, len(tempQuery)):
     query = query+" "+tempQuery[i]
 
+selectQuery = query
+print("Create:  "+selectQuery)
+
 def getColumns(cols, colType):
     if isinstance(cols, dict):
         # print(cols["value"])
@@ -59,61 +62,112 @@ parsed = parse(query)
 
 # print(parsed)
 
-fromTable = parsed["from"]
-if isinstance(fromTable, dict):
-    fromTable = fromTable["value"]
-viewColumns = getColumns(parsed["select"], "name")
-tableColumns = getColumns(parsed["select"], "value")
-mapping = {}
 
-#Create view table
-# cursor.execute(oldQuery)
+def simpleQuery(parsed):
+    fromTable = parsed["from"]
+    if isinstance(fromTable, dict):
+        fromTable = fromTable["value"]
+    viewColumns = getColumns(parsed["select"], "name")
+    tableColumns = getColumns(parsed["select"], "value")
+    mapping = {}
 
-# print(viewColumns)
-# print(tableColumns)
-for i in range(len(viewColumns)):
-    mapping[viewColumns[i]] = tableColumns[i]
+    #Create view table
+    # cursor.execute(oldQuery)
 
-print("Mapping from MV -> Table: "+ json.dumps(mapping))
+    # print(viewColumns)
+    # print(tableColumns)
+    for i in range(len(viewColumns)):
+        mapping[viewColumns[i]] = tableColumns[i]
 
-#Set up triggers
-#Insert Trigger
-insertTrigger = "create trigger trig_"+fromTable+"_ins after insert on "+fromTable+" for each row begin insert into "+viewName+" ("
-for i in range(len(viewColumns)):
-    if i != 0:
-        insertTrigger = insertTrigger+","
-    insertTrigger = insertTrigger+" "+viewColumns[i]
-insertTrigger = insertTrigger + ") values ("
-for i in range(len(tableColumns)):
-    if i != 0:
-        insertTrigger = insertTrigger+","
-    insertTrigger = insertTrigger+" NEW."+tableColumns[i]
-insertTrigger = insertTrigger + "); end;"
-print("INSERT TRIGGER: "+insertTrigger)
+    print("Mapping from MV -> Table: "+ json.dumps(mapping))
 
-cursor.execute(insertTrigger)
+    #Set up triggers
+    #Insert Trigger
+    insertTrigger = "create trigger trig_"+fromTable+"_ins after insert on "+fromTable+" for each row begin insert into "+viewName+" ("
+    for i in range(len(viewColumns)):
+        if i != 0:
+            insertTrigger = insertTrigger+","
+        insertTrigger = insertTrigger+" "+viewColumns[i]
+    insertTrigger = insertTrigger + ") values ("
+    for i in range(len(tableColumns)):
+        if i != 0:
+            insertTrigger = insertTrigger+","
+        insertTrigger = insertTrigger+" NEW."+tableColumns[i]
+    insertTrigger = insertTrigger + "); end;"
+    print("INSERT TRIGGER: "+insertTrigger)
 
-#Delete trigger
-deleteTrigger = "create trigger trig_"+fromTable+"_del after delete on "+fromTable+" for each row begin delete from "+viewName+" where "+viewColumns[0]+" = OLD."+tableColumns[0]+"; end;"
-print("DELETE TRIGGER: "+deleteTrigger)
+    # cursor.execute(insertTrigger)
 
-cursor.execute(deleteTrigger)
+    #Delete trigger
+    deleteTrigger = "create trigger trig_"+fromTable+"_del after delete on "+fromTable+" for each row begin delete from "+viewName+" where "+viewColumns[0]+" = OLD."+tableColumns[0]+"; end;"
+    print("DELETE TRIGGER: "+deleteTrigger)
+
+    # cursor.execute(deleteTrigger)
 
 #Update trigger
-updateTrigger = "create trigger trig_"+fromTable+"_upd after update on "+fromTable+" for each row begin update "+viewName+" set "
-for i in range(len(viewColumns)):
-    if i != 0:
-        updateTrigger = updateTrigger+","
-    updateTrigger = updateTrigger+" "+viewColumns[i]+" = NEW."+tableColumns[i]
-updateTrigger = updateTrigger + "; end;"
+    updateTrigger = "create trigger trig_"+fromTable+"_upd after update on "+fromTable+" for each row begin update "+viewName+" set "
+    for i in range(len(viewColumns)):
+        if i != 0:
+            updateTrigger = updateTrigger+","
+        updateTrigger = updateTrigger+" "+viewColumns[i]+" = NEW."+tableColumns[i]
+    updateTrigger = updateTrigger + "; end;"
 # for i in range(len(tableColumns)):
 #     if i != 0:
 #         updateTrigger = updateTrigger+","
 #     updateTrigger = updateTrigger+" NEW."+tableColumns[i]
 # updateTrigger = updateTrigger + "); end;"
-print("UPDATE TRIGGER: "+updateTrigger)
+    print("UPDATE TRIGGER: "+updateTrigger)
 
-cursor.execute(updateTrigger)
+# cursor.execute(updateTrigger)
+
+
+def complexQuery(parsed):
+    fromArr = parsed["from"]
+    if isinstance(fromArr[0], dict):
+        table1 = fromArr[0]["value"]
+        table1Alias = fromArr[0]["name"]
+    else:
+        table1 = fromArr[0]
+        table1Alias = table1
+    
+    if isinstance(fromArr[1], dict):
+        function = list(fromArr[1].keys())[0]
+        functionVal = fromArr[1][function]
+        if isinstance(functionVal, dict):
+            table2 = fromArr[1][function]["value"]
+            table2Alias = fromArr[1][function]["name"]
+        else:
+            table2 = fromArr[1][function]
+            table2Alias = table2
+
+    #Create stored procedure
+    sqlProcedure = "create procedure clean"+viewName+"() begin drop table "+viewName+"; create table "+viewName+" as "+selectQuery+"; end;"
+    print("SQL clean up procedure: "+sqlProcedure)
+
+    #Setup triggers
+    insertTriggerTable1 = "create trigger trigq_"+table1+"_ins after insert on "+table1+" for each row begin call clean"+viewName+"(); end;"
+    insertTriggerTable2 = "create trigger trigq_"+table2+"_ins after insert on "+table2+" for each row begin call clean"+viewName+"(); end;"
+
+    updateTriggerTable1 = "create trigger trigq_"+table1+"_upd after update on "+table1+" for each row begin call clean"+viewName+"(); end;"
+    updateTriggerTable2 = "create trigger trigq_"+table2+"_upd after update on "+table2+" for each row begin call clean"+viewName+"(); end;"
+    
+    deleteTriggerTable1 = "create trigger trigq_"+table1+"_del after delete on "+table1+" for each row begin call clean"+viewName+"(); end;"
+    deleteTriggerTable2 = "create trigger trigq_"+table2+"_del after delete on "+table2+" for each row begin call clean"+viewName+"(); end;"
+    # print(table1+" "+table1Alias+" "+table2+" "+table2Alias)
+    print("Insert triggers: "+insertTriggerTable1);
+    print("Insert triggers: "+insertTriggerTable2);
+
+    print("Update triggers: "+updateTriggerTable1);
+    print("Update triggers: "+updateTriggerTable2);
+
+    print("Delete triggers: "+deleteTriggerTable1);
+    print("Delete triggers: "+deleteTriggerTable2);
+fromTable = parsed["from"]
+if isinstance(fromTable, list):
+    #Complex query
+    complexQuery(parsed)
+else:
+    simpleQuery(parsed)
 
 # for i in range(len(viewColumns)):
 #     if i != 0:
